@@ -25,6 +25,7 @@ public:
     void setCell(int, int, ValueType);
     void clearCell(int, int); // Function to clear a cell
     bool isSolved(); // Function to check if the board has been solved
+    void printConflicts() const;
 
 private:
     matrix<ValueType> value;
@@ -135,6 +136,36 @@ bool board::isSolved() {
     return true;
 }
 
+void board::printConflicts() const {
+    cout << "Row Conflicts:" << endl;
+    for (int i = 1; i <= BoardSize; ++i) {
+        for (int j = 1; j <= MaxValue; ++j) {
+            cout << (rows[i][j] ? "1" : "0") << " ";
+        }
+        cout << endl;
+    }
+
+    cout << "Column Conflicts:" << endl;
+    for (int i = 1; i <= BoardSize; ++i) {
+        for (int j = 1; j <= MaxValue; ++j) {
+            cout << (columns[i][j] ? "1" : "0") << " ";
+        }
+        cout << endl;
+    }
+
+    cout << "Square Conflicts:" << endl;
+    for (int i = 1; i <= BoardSize; ++i) {
+        for (int j = 1; j <= MaxValue; ++j) {
+            cout << (squares[i][j] ? "1" : "0") << " ";
+        }
+        cout << endl;
+    }
+}
+
+int squareNumber(int i, int j) {
+    return SquareSize * ((i - 1) / SquareSize) + ((j - 1) / SquareSize) + 1;
+}
+
 int main() {
     ifstream fin;
     string fileName = "sudoku.txt";
@@ -149,9 +180,11 @@ int main() {
             b1.initialize(fin);
             b1.print();
             cout << "Is Solved: " << (b1.isSolved() ? "Yes" : "No") << endl;
+            b1.printConflicts();
         }
     } catch (indexRangeError &ex) {
         cout << ex.what() << endl;
         exit(1);
     }
+    return 0;
 }
