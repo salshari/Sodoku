@@ -39,6 +39,10 @@ board::board(int sqSize) : value(BoardSize + 1, BoardSize + 1), rows(BoardSize +
     clear();
 }
 
+int squareNumber(int i, int j) {
+    return SquareSize * ((i - 1) / SquareSize) + ((j - 1) / SquareSize) + 1;
+}
+
 void board::clear() {
     for (int i = 1; i <= BoardSize; i++) {
         for (int j = 1; j <= BoardSize; j++) {
@@ -47,7 +51,7 @@ void board::clear() {
     }
 }
 
-void board::initialize(ifstream &fin) {
+/*void board::initialize(ifstream &fin) {
     char ch;
     clear();
     for (int i = 1; i <= BoardSize; i++)
@@ -56,7 +60,38 @@ void board::initialize(ifstream &fin) {
             if (ch != '.')
                 setCell(i, j, ch - '0');
         }
+}*/
+
+void board::initialize(ifstream &fin)
+{
+    char ch;
+    clear(); // Clear the board before initializing
+
+    for (int i = 1; i <= BoardSize; i++)
+    {
+        for (int j = 1; j <= BoardSize; j++)
+        {
+            fin >> ch;
+            // If the read char is not Blank
+            if (ch != '.')
+            {
+                try
+                {
+                    setCell(i, j, ch - '0'); // Convert char to int and set cell value
+                }
+                catch (rangeError &ex)
+                {
+                    cout << "Error: " << ex.what() << endl;
+                    // Skip to the end of the line in the input file
+                    string dummy;
+                    getline(fin, dummy);
+                    return; // Exit the function to move to the next Sudoku board
+                }
+            }
+        }
+    }
 }
+
 
 void board::print() {
     for (int i = 1; i <= BoardSize; i++) {
@@ -92,11 +127,14 @@ ValueType board::getCell(int i, int j) {
         throw rangeError("bad value in getCell");
 }
 
-void board::setCell(int i, int j, ValueType val) {
+/*void board::setCell(int i, int j, ValueType val) {
     if (val < MinValue || val > MaxValue)
         throw rangeError("bad value in setCell");
     if (i < 1 || i > BoardSize || j < 1 || j > BoardSize)
         throw rangeError("bad value in setCell");
+    if (!isBlank(i, j)) {
+        throw rangeError("cell already contains a value in setCell");
+    }
     if (!rows[i][val] && !columns[j][val] && !squares[squareNumber(i, j)][val]) {
         value[i][j] = val;
         rows[i][val] = true;
@@ -104,6 +142,17 @@ void board::setCell(int i, int j, ValueType val) {
         squares[squareNumber(i, j)][val] = true;
     } else {
         throw rangeError("value already present in setCell");
+    }
+}*/
+void board::setCell(int i, int j, ValueType newValue)
+{
+    if (i >= 1 && i <= BoardSize && j >= 1 && j <= BoardSize)
+    {
+        value[i][j] = newValue;
+    }
+    else
+    {
+        throw rangeError("bad value in setCell");
     }
 }
 
@@ -136,7 +185,7 @@ bool board::isSolved() {
     return true;
 }
 
-void board::printConflicts() const {
+/*void board::printConflicts() const {
     cout << "Row Conflicts:" << endl;
     for (int i = 1; i <= BoardSize; ++i) {
         for (int j = 1; j <= MaxValue; ++j) {
@@ -160,11 +209,55 @@ void board::printConflicts() const {
         }
         cout << endl;
     }
+}*/
+void board::printConflicts() const {
+    cout << "Row Conflicts:" << endl;
+    for (int i = 1; i <= BoardSize; ++i) {
+        for (int val = 1; val <= MaxValue; ++val) {
+            int count = 0;
+            for (int j = 1; j <= BoardSize; ++j) {
+                if (value[i][j] == val) {
+                    ++count;
+                }
+            }
+            cout << count << " ";
+        }
+        cout << endl;
+    }
+
+    cout << "Column Conflicts:" << endl;
+    for (int j = 1; j <= BoardSize; ++j) {
+        for (int val = 1; val <= MaxValue; ++val) {
+            int count = 0;
+            for (int i = 1; i <= BoardSize; ++i) {
+                if (value[i][j] == val) {
+                    ++count;
+                }
+            }
+            cout << count << " ";
+        }
+        cout << endl;
+    }
+
+    cout << "Square Conflicts:" << endl;
+    for (int i = 1; i <= BoardSize; i += SquareSize) {
+        for (int j = 1; j <= BoardSize; j += SquareSize) {
+            for (int val = 1; val <= MaxValue; ++val) {
+                int count = 0;
+                for (int r = i; r < i + SquareSize; ++r) {
+                    for (int c = j; c < j + SquareSize; ++c) {
+                        if (value[r][c] == val) {
+                            ++count;
+                        }
+                    }
+                }
+                cout << count << " ";
+            }
+            cout << endl;
+        }
+    }
 }
 
-int squareNumber(int i, int j) {
-    return SquareSize * ((i - 1) / SquareSize) + ((j - 1) / SquareSize) + 1;
-}
 
 int main() {
     ifstream fin;
@@ -188,3 +281,5 @@ int main() {
     }
     return 0;
 }
+
+
