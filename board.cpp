@@ -26,22 +26,31 @@ public:
     void clearCell(int, int); // Function to clear a cell
     bool isSolved(); // Function to check if the board has been solved
     void printConflicts() const;
+    bool solve(int, int); // Recursive solver function
+    int getRecursiveCalls();
 
 private:
     matrix<ValueType> value;
     matrix<bool> rows;
     matrix<bool> columns;
     matrix<bool> squares;
+    int recursiveCalls; // Counter for recursive calls
 };
 
 board::board(int sqSize) : value(BoardSize + 1, BoardSize + 1), rows(BoardSize + 1, MaxValue + 1),
                             columns(BoardSize + 1, MaxValue + 1), squares(BoardSize + 1, MaxValue + 1) {
     clear();
+    recursiveCalls = 0; // Initialize recursive calls counter
 }
 
 int squareNumber(int i, int j) {
     return SquareSize * ((i - 1) / SquareSize) + ((j - 1) / SquareSize) + 1;
 }
+
+int board::getRecursiveCalls(){
+    return recursiveCalls;
+}
+
 
 void board::clear() {
     for (int i = 1; i <= BoardSize; i++) {
@@ -49,18 +58,11 @@ void board::clear() {
             value[i][j] = Blank;
         }
     }
+    // Reset rows, columns, and squares matrices
+    rows = matrix<bool>(BoardSize + 1, MaxValue + 1);
+    columns = matrix<bool>(BoardSize + 1, MaxValue + 1);
+    squares = matrix<bool>(BoardSize + 1, MaxValue + 1);
 }
-
-/*void board::initialize(ifstream &fin) {
-    char ch;
-    clear();
-    for (int i = 1; i <= BoardSize; i++)
-        for (int j = 1; j <= BoardSize; j++) {
-            fin >> ch;
-            if (ch != '.')
-                setCell(i, j, ch - '0');
-        }
-}*/
 
 void board::initialize(ifstream &fin)
 {
@@ -127,28 +129,15 @@ ValueType board::getCell(int i, int j) {
         throw rangeError("bad value in getCell");
 }
 
-/*void board::setCell(int i, int j, ValueType val) {
-    if (val < MinValue || val > MaxValue)
-        throw rangeError("bad value in setCell");
-    if (i < 1 || i > BoardSize || j < 1 || j > BoardSize)
-        throw rangeError("bad value in setCell");
-    if (!isBlank(i, j)) {
-        throw rangeError("cell already contains a value in setCell");
-    }
-    if (!rows[i][val] && !columns[j][val] && !squares[squareNumber(i, j)][val]) {
-        value[i][j] = val;
-        rows[i][val] = true;
-        columns[j][val] = true;
-        squares[squareNumber(i, j)][val] = true;
-    } else {
-        throw rangeError("value already present in setCell");
-    }
-}*/
 void board::setCell(int i, int j, ValueType newValue)
 {
     if (i >= 1 && i <= BoardSize && j >= 1 && j <= BoardSize)
     {
         value[i][j] = newValue;
+        // Mark the row, column, and square as occupied by this value
+        rows[i][newValue] = true;
+        columns[j][newValue] = true;
+        squares[squareNumber(i, j)][newValue] = true;
     }
     else
     {
@@ -185,31 +174,6 @@ bool board::isSolved() {
     return true;
 }
 
-/*void board::printConflicts() const {
-    cout << "Row Conflicts:" << endl;
-    for (int i = 1; i <= BoardSize; ++i) {
-        for (int j = 1; j <= MaxValue; ++j) {
-            cout << (rows[i][j] ? "1" : "0") << " ";
-        }
-        cout << endl;
-    }
-
-    cout << "Column Conflicts:" << endl;
-    for (int i = 1; i <= BoardSize; ++i) {
-        for (int j = 1; j <= MaxValue; ++j) {
-            cout << (columns[i][j] ? "1" : "0") << " ";
-        }
-        cout << endl;
-    }
-
-    cout << "Square Conflicts:" << endl;
-    for (int i = 1; i <= BoardSize; ++i) {
-        for (int j = 1; j <= MaxValue; ++j) {
-            cout << (squares[i][j] ? "1" : "0") << " ";
-        }
-        cout << endl;
-    }
-}*/
 void board::printConflicts() const {
     cout << "Row Conflicts:" << endl;
     for (int i = 1; i <= BoardSize; ++i) {
@@ -258,6 +222,29 @@ void board::printConflicts() const {
     }
 }
 
+bool board::solve(int i, int j) {
+    ++recursiveCalls;
+
+    if (i == BoardSize + 1) {
+        i = 1;
+        if (++j == BoardSize + 1)
+            return true; // Entire board has been successfully filled without conflict
+    }
+
+    if (!isBlank(i, j))
+        return solve(i + 1, j);
+
+    for (ValueType val = MinValue; val <= MaxValue; ++val) {
+        if (!rows[i][val] && !columns[j][val] && !squares[squareNumber(i, j)][val]) {
+            setCell(i, j, val);
+            if (solve(i + 1, j))
+                return true;
+            clearCell(i, j); // Undo assignment if no solution found
+        }
+    }
+
+    return false; // No value in [MinValue, MaxValue] worked, backtrack
+}
 
 int main() {
     ifstream fin;
@@ -269,17 +256,30 @@ int main() {
     }
     try {
         board b1(SquareSize);
+        int totalRecursiveCalls = 0;
+        int boardsSolved = 0;
         while (fin && fin.peek() != 'Z') {
             b1.initialize(fin);
             b1.print();
             cout << "Is Solved: " << (b1.isSolved() ? "Yes" : "No") << endl;
-            b1.printConflicts();
+            b1.solve(1, 1);
+            if (b1.isSolved()) {
+                cout << "Board solved!" << endl;
+                b1.print();
+                cout << "Recursive calls needed: " << b1.getRecursiveCalls() << endl;
+                totalRecursiveCalls += b1.getRecursiveCalls();
+                ++boardsSolved;
+            } else {
+                cout << "Unable to solve board!" << endl;
+            }
         }
+        cout << "Total boards solved: " << boardsSolved << endl;
+        cout << "Total recursive calls: " << totalRecursiveCalls*(-1) << endl;
+        if (boardsSolved > 0)
+            cout << "Average recursive calls per board: " << (static_cast<double>(totalRecursiveCalls) / boardsSolved)*(-1)<< endl;
     } catch (indexRangeError &ex) {
         cout << ex.what() << endl;
         exit(1);
     }
     return 0;
 }
-
-
