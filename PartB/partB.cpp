@@ -260,10 +260,15 @@ bool board::isSolved()
 
 void board::printConflicts() const {
     cout << "Row Conflicts:" << endl;
+    //iterates through each row in the board
     for (int i = 1; i <= BoardSize; ++i) {
+        //iterates through the possible values (1-9)
         for (int val = 1; val <= MaxValue; ++val) {
+            // initialized counter that is used to keep track of occurences of a value in the row
             int count = 0;
+            //iterates through the columns in the row
             for (int j = 1; j <= BoardSize; ++j) {
+                //checks if the value in that cell is found and adds 1 to count if so
                 if (value[i][j] == val) {
                     ++count;
                 }
@@ -274,10 +279,15 @@ void board::printConflicts() const {
     }
 
     cout << "Column Conflicts:" << endl;
+    //iterates through each row in the board
     for (int j = 1; j <= BoardSize; ++j) {
+        //iterates through the possible values (1-9)
         for (int val = 1; val <= MaxValue; ++val) {
+            // initialized counter that is used to keep track of occurences of a value in the row
             int count = 0;
+            //iterates through the columns in the row
             for (int i = 1; i <= BoardSize; ++i) {
+                //checks if the value in that cell is found and adds 1 to count if so
                 if (value[i][j] == val) {
                     ++count;
                 }
@@ -288,12 +298,19 @@ void board::printConflicts() const {
     }
 
     cout << "Square Conflicts:" << endl;
+    //iterates through each square row in the board
     for (int i = 1; i <= BoardSize; i += SquareSize) {
+        //iterates through each square column
         for (int j = 1; j <= BoardSize; j += SquareSize) {
+            //iterates through the possible values(1-9)
             for (int val = 1; val <= MaxValue; ++val) {
+                // initialized counter that is used to keep track of occurences of a value in the row
                 int count = 0;
+                //iterates through all the rows in the square
                 for (int r = i; r < i + SquareSize; ++r) {
+                    //iterates through all the columns in the square
                     for (int c = j; c < j + SquareSize; ++c) {
+                        //checks if the value in that cell is found and adds 1 to count if so
                         if (value[r][c] == val) {
                             ++count;
                         }
@@ -307,20 +324,26 @@ void board::printConflicts() const {
 }
 
 bool board::solve(int i, int j) {
+    //increments the recursive calls count by one each time it is run
     ++recursiveCalls;
-
+//checks if all rows have been traversed when iterating through
     if (i == BoardSize + 1) {
+        //resets the row index to 1
         i = 1;
+        //checks if all of the columns have been traversed when iterating through
         if (++j == BoardSize + 1)
             return true; // Entire board has been successfully filled without conflict
     }
-
+    //checks if the cell is not blank, if not blank moves to the next cell
     if (!isBlank(i, j))
         return solve(i + 1, j);
-
+//iterates through possible values that could be placed in a blank cell
     for (ValueType val = MinValue; val <= MaxValue; ++val) {
+        //checks if the value is not present in the row, column, or square that it is solving
         if (!rows[i][val] && !columns[j][val] && !squares[squareNumber(i, j)][val]) {
+            //if the value is not present, sets the value in the cell
             setCell(i, j, val);
+            //moves on to the next cell
             if (solve(i + 1, j))
                 return true;
             clearCell(i, j); // Undo assignment if no solution found
@@ -347,23 +370,32 @@ int main() {
             b1.print();
             cout << "Is Solved: " << (b1.isSolved() ? "Yes" : "No") << endl;
             b1.solve(1, 1);
+            //checks if board is solved and prints a statement saying it is if is true
             if (b1.isSolved()) {
                 cout << "Board solved!" << endl;
                 b1.print();
+                //prints the number of recursive calls needed for that particular board
                 cout << "Recursive calls needed: " << b1.getRecursiveCalls() << endl;
+                //adds the number of recursive calls needed for current board to total recursive calls count
                 totalRecursiveCalls += b1.getRecursiveCalls();
+                //increments boards solved count by 1
                 ++boardsSolved;
             } else {
+                //if not solved prints unable to solve
                 cout << "Unable to solve board!" << endl;
             }
         }
+        //prints the total number of boards solved
         cout << "Total boards solved: " << boardsSolved << endl;
-        cout << "Total recursive calls: " << totalRecursiveCalls*(-1) << endl;
+        //prints the total number of recursive calls for the all the boards
+        cout << "Total recursive calls: " << totalRecursiveCalls << endl;
+        //if any boards were solved prints the average recursive calls needed
         if (boardsSolved > 0)
-            cout << "Average recursive calls per board: " << (static_cast<double>(totalRecursiveCalls) / boardsSolved)*(-1)<< endl;
+            cout << "Average recursive calls per board: " << static_cast<double>(totalRecursiveCalls) / boardsSolved << endl;
     } catch (indexRangeError &ex) {
         cout << ex.what() << endl;
         exit(1);
     }
     return 0;
 }
+
